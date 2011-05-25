@@ -1,11 +1,11 @@
 (function ( Animator ) {
-Animator.GIF = (function () {
-    function (bytes) {
+var GIF = (function () {
+    return function (bytes) {
         // Get signature
         var signature = String.fromCharCode.apply(String, bytes.slice(0, 3));
         // signature is "GIF"
         if (signature !== "GIF") {
-        throw new Error( "This file type is not supported:" + signature );
+            throw new Error( "This file type is not GIF:" + signature );
         }
 
         // Get version
@@ -23,19 +23,7 @@ Animator.GIF = (function () {
 
         var backgroundColorIndex = bytes[11];
         var pixelAspectRatio = (bytes[12] + 15) / 64;
-        
-        var bytes = bytes;
-        return {
-            signature : signature,
-            version : version,
-            logicalScreenWidth : logicalScreenWidth,
-            logicalScreenHeight : logicalScreenHeight,
-            globalColorTableFlag : globalColorTableFlag,
-            colorResolution : colorResolution,
-            sortFlag : sortFlag,
-            sizeOfGlobalColorTable : sizeOfGlobalColorTable,
-        };
-    })();
-};
+    }
+})();
 })( Animator );
 

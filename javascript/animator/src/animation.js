@@ -1,7 +1,6 @@
 (function ( Animator ) {
 Animator.Animation = (function () {
-function (bytes) {
-    return {};
+return function () {
 }
 });
 })( Animator );

@@ -9,7 +9,11 @@ JS_ENGINE ?= `which node`
 COMPILER = ${JS_ENGINE} ${BUILD_DIR}/uglify.js --unsafe
 POST_COMPILER = ${JS_ENGINE} ${BUILD_DIR}/post-compile.js
 
-BASE_FILES = ${SRC_DIR}/core.js
+BASE_FILES = ${SRC_DIR}/core.js\
+    ${SRC_DIR}/ajax.js\
+    ${SRC_DIR}/gif.js\
+    ${SRC_DIR}/animation.js
+    
 
 MODULES = ${SRC_DIR}/intro.js\
 	${BASE_FILES}\
@@ -37,6 +41,8 @@ ${ANIMATOR}: ${MODULES} | ${DIST_DIR}
 	@@echo "Building" ${ANIMATOR}
 
 	@@cat ${MODULES} |\
+		sed 's/.function...Animator...{//' | \
+		sed 's/}...Animator..;//' | \
 		sed 's/@DATE/'"${DATE}"'/' | \
 		${VER} > ${ANIMATOR};
 
