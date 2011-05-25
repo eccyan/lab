@@ -1,0 +1,2 @@
+global.Animator = Animator;
+})(this);
