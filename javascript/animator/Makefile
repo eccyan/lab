@@ -9,10 +9,12 @@ JS_ENGINE ?= `which node`
 COMPILER = ${JS_ENGINE} ${BUILD_DIR}/uglify.js --unsafe
 POST_COMPILER = ${JS_ENGINE} ${BUILD_DIR}/post-compile.js
 
-BASE_FILES = ${SRC_DIR}/core.js\
-    ${SRC_DIR}/ajax.js\
+BASE_FILES = \
+    ${SRC_DIR}/base64.js\
+    ${SRC_DIR}/util.js\
     ${SRC_DIR}/gif.js\
-    ${SRC_DIR}/animation.js
+    ${SRC_DIR}/animation.js\
+    ${SRC_DIR}/core.js
     
 
 MODULES = ${SRC_DIR}/intro.js\

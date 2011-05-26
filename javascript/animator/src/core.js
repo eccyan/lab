@@ -1,0 +1,4 @@
+
+var Animator = function () { 
+};
+

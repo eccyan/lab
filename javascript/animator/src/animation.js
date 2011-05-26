@@ -1,6 +1,6 @@
-(function ( Animator ) {
-Animator.Animation = (function () {
+
+// Animation class
+var Animation = (function () {
 return function () {
-}
-});
-})( Animator );
+};
+})();

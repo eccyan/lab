@@ -7,4 +7,4 @@
  * Date: @DATE
  */
 (function( global ) {
-
+var Animator = function (id, url) {

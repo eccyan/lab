@@ -1,5 +1,5 @@
-(function ( Animator ) {
-var GIF = (function () {
+
+var Gif = (function () {
     return function (bytes) {
         // Get signature
         var signature = String.fromCharCode.apply(String, bytes.slice(0, 3));
@@ -23,7 +23,7 @@ var GIF = (function () {
 
         var backgroundColorIndex = bytes[11];
         var pixelAspectRatio = (bytes[12] + 15) / 64;
-    }
+        return {
+        };
+    };
 })();
-})( Animator );
-
