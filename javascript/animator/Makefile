@@ -10,7 +10,6 @@ COMPILER = ${JS_ENGINE} ${BUILD_DIR}/uglify.js --unsafe
 POST_COMPILER = ${JS_ENGINE} ${BUILD_DIR}/post-compile.js
 
 BASE_FILES = \
-    ${SRC_DIR}/base64.js\
     ${SRC_DIR}/util.js\
     ${SRC_DIR}/gif.js\
     ${SRC_DIR}/animation.js\
