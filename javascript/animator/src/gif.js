@@ -11,10 +11,14 @@ var Gif = (function () {
                     backgroundColorIndex = bytes[11],
                     pixelAspectRatio = bytes[12],
                     containsGlobalColorTable = (bytes[10] >> 7) == 1,
-                    globalColorTableLength = containsGlobalColorTable ? (Math.pow(2,(bytes[10]&0x07)+1)-1)*3 : 0,
+                    globalColorTableLength = containsGlobalColorTable ? Math.pow(2, (bytes[10]&0x07)+1)*3 : 0,
+		    size = 13 + globalColorTableLength,
                     globalColorTable = containsGlobalColorTable ? bytes.slice(13, globalColorTableLength) : [];
                 
                 return {
+		    getSize : function () {
+			return size;
+		    },
                     getData : function () {
                         return [].concat(
                             signature,
@@ -27,7 +31,6 @@ var Gif = (function () {
                             globalColorTable
                         );
                     }
-                    // TODO: implement accesser for editing header
                 };
             };
         })();
@@ -41,17 +44,35 @@ var Gif = (function () {
                     height = bytes.slice(7, 9),
                     packedFields = bytes.slice(9, 10),
                     containsLocalColorTable = (bytes[9] >> 7) == 1,
-                    localColorTableLength = containsLocalColorTable ? (Math.pow(2,(bytes[9]&0x07)+1)-1)*3 : 0,
+                    localColorTableLength = containsLocalColorTable ? Math.pow(2,(bytes[9]&0x07)+1)*3 : 0,
                     localColorTable = containsLocalColorTable ? bytes.slice(10, localColorTableLength) : [],
                     lzwMinimumCodeSide = bytes.slice(10+localColorTableLength, 1),
-                    images = [],
-                    terminator = [0];
+                    datas = [],
+                    terminator = [0],
+		    size = null;
+
+		for (var i=0, length=10+localColorTableLength+1, terminated = false; !terminated; ++i) {
+		    var dataSize = bytes.slice(length, length+1) >>> 0,
+			data = bytes.slice(length+1, (length+1)+dataSize);
+
+		    if (dataSize > 0) {
+			datas[i] = [].concat([dataSize], data);
+		    } else {
+			terminated = true;
+		    }
+
+		    length += dataSize+1;
+		    size = length;
+		}
 
                 return {
+		    getSize : function () {
+			return size;
+		    },
                     getData : function () {
                         var catenated = [];
                         for (var i=0; i<images.length; ++i) {
-                             catenated = [].push.apply(catenated, images[i]);
+                             [].push.apply(catenated, datas[i]);
                         }
 
                         return [].concat(
@@ -75,17 +96,39 @@ var Gif = (function () {
             return function (bytes) {
                 var signature = bytes.slice(0, 1),
                     label = bytes.slice(1, 2),
-                    size = bytes.slice(2, 3),
-                    data = size > 0 ? bytes.slice(3, size-1) : [],
-                    terminator = size > 0 ? [0] : [];
+                    datas = [],
+                    terminator = [0],
+		    size = null;
+
+		for (var i=0, length=2, terminated = false; !terminated; ++i) {
+		    var dataSize = bytes.slice(length, length+1) >>> 0,
+			data = bytes.slice(length+1, (length+1)+dataSize);
+
+		    if (dataSize > 0) {
+			datas[i] = [].concat([dataSize], data);
+		    } else {
+			terminated = true;
+		    }
+
+		    length += dataSize+1;
+		    size = length;
+		}
 
                 return {
+		    getSize : function () {
+			return size;
+		    },
                     getData : function () {
+                        var catenated = [];
+                        for (var i=0; i<images.length; ++i) {
+                             [].push.apply(catenated, datas[i]);
+                        }
+
                         return [].concat(
                             signature,
                             label,
                             size,
-                            data,
+                            catenated,
                             terminator
                         );
                     }
@@ -93,8 +136,45 @@ var Gif = (function () {
             };
         })();
 
+	var Blocks = (function () {
+	    return function (bytes) {
+		var data = [];
+		var factory = { 
+		    0x2c : function () { return new ImageBlock(bytes); },
+		    0x21 : function () { return new ExtensionBlock(bytes); }
+		};
+
+		for (var i=0, length=0; length<bytes.length; ++i) {
+		    data[i] = factory[bytes[length]]();
+		    length += data[i].getSize();
+		}
+		return {
+		    getSize : function() {
+			return data.length;
+		    },
+		    get : function(index) {
+			return data[index];
+		    },
+		    set : function(index, block) {
+			data[index] = block;
+		    }
+		};
+	    };
+	})();
+
+	var header = new Header(bytes),
+	    blocks = new Blocks( bytes.slice(header.getSize()) );
+
         return {
-            header : new Header(bytes)
+            header : header,
+	    blocks : blocks,
+	    getData : function () {
+		var data = [];
+		[].push.apply(data, header.getData());
+		for (var i=0; i<blocks.getSize(); ++i) {
+		    [].push.apply(data, blocks.get(i).getData());
+		}
+	    }
         };
     };
 })();

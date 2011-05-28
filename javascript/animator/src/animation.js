@@ -1,6 +1,6 @@
 
 // Animation class
 var Animation = (function () {
-return function () {
-};
+    return function () {
+    };
 })();

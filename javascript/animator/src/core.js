@@ -15,6 +15,7 @@ var Animator = (function () {
 			mimeType : 'text/plain; charset=x-user-defined',
 			success : function (xhr) {
 			    var bytes = util.stringToBytes(xhr.responseText);
+			    var image = new Gif(bytes);
 			    var imgElement = document.createElement('img');
 			    imgElement.src = 'data:image/gif;base64,'+util.encodeBase64(bytes);
 			    element.appendChild(imgElement);

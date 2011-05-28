@@ -30,7 +30,7 @@ var Util = (function () {
 		    encoded += keys[(binary >>>18) & 0x3f] + keys[ (binary >>>12) & 0x3f] + keys[ (binary >>> 6) & 0x3f] + keys[ binary & 0x3f];
 		}
 
-		// replace 0 to '=' 
+		// replace padded 0 to '=' 
 		if (padLength < 3) {
 		    encoded = encoded.substr(0, encoded.length - padLength);
 		    for (i=0; i<padLength; ++i) {
