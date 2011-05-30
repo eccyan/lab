@@ -17,7 +17,7 @@ var Animator = (function () {
 			    var bytes = util.stringToBytes(xhr.responseText);
 			    var image = new Gif(bytes);
 			    var imgElement = document.createElement('img');
-			    imgElement.src = 'data:image/gif;base64,'+util.encodeBase64(bytes);
+			    imgElement.src = 'data:image/gif;base64,'+util.encodeBase64(image.getData());
 			    element.appendChild(imgElement);
 			}
 		    });

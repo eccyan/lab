@@ -5,15 +5,15 @@ var Gif = (function () {
             return function (bytes) {
                 var signature = bytes.slice(0, 3),
                     version = bytes.slice(3, 6),
-                    width = bytes.slice(6, 7),
-                    height = bytes.slice(8, 9),
-                    packedFields = bytes[10],
-                    backgroundColorIndex = bytes[11],
-                    pixelAspectRatio = bytes[12],
+                    width = bytes.slice(6, 8),
+                    height = bytes.slice(8, 10),
+                    packedFields = bytes.slice(10, 11),
+                    backgroundColorIndex = bytes.slice(11, 12),
+                    pixelAspectRatio = bytes.slice(12, 13),
                     containsGlobalColorTable = (bytes[10] >> 7) == 1,
                     globalColorTableLength = containsGlobalColorTable ? Math.pow(2, (bytes[10]&0x07)+1)*3 : 0,
-		    size = 13 + globalColorTableLength,
-                    globalColorTable = containsGlobalColorTable ? bytes.slice(13, globalColorTableLength) : [];
+                    globalColorTable = containsGlobalColorTable ? bytes.slice(13, 13+globalColorTableLength) : [],
+		    size = 13 + globalColorTableLength;
                 
                 return {
 		    getSize : function () {
@@ -45,23 +45,23 @@ var Gif = (function () {
                     packedFields = bytes.slice(9, 10),
                     containsLocalColorTable = (bytes[9] >> 7) == 1,
                     localColorTableLength = containsLocalColorTable ? Math.pow(2,(bytes[9]&0x07)+1)*3 : 0,
-                    localColorTable = containsLocalColorTable ? bytes.slice(10, localColorTableLength) : [],
-                    lzwMinimumCodeSide = bytes.slice(10+localColorTableLength, 1),
+                    localColorTable = containsLocalColorTable ? bytes.slice(10, 10+localColorTableLength) : [],
+                    lzwMinimumCodeSide = bytes.slice(10+localColorTableLength, 10+localColorTableLength+1),
                     datas = [],
                     terminator = [0],
 		    size = null;
 
 		for (var i=0, length=10+localColorTableLength+1, terminated = false; !terminated; ++i) {
-		    var dataSize = bytes.slice(length, length+1) >>> 0,
-			data = bytes.slice(length+1, (length+1)+dataSize);
+		    var dataSize = bytes.slice(length, length+1),
+			data = bytes.slice(length+1, (length+1)+dataSize[0]);
 
-		    if (dataSize > 0) {
-			datas[i] = [].concat([dataSize], data);
+		    if (dataSize[0] > 0) {
+			datas[i] = [].concat(dataSize, data);
 		    } else {
 			terminated = true;
 		    }
 
-		    length += dataSize+1;
+		    length += dataSize[0]+1;
 		    size = length;
 		}
 
@@ -71,7 +71,7 @@ var Gif = (function () {
 		    },
                     getData : function () {
                         var catenated = [];
-                        for (var i=0; i<images.length; ++i) {
+                        for (var i=0; i<datas.length; ++i) {
                              [].push.apply(catenated, datas[i]);
                         }
 
@@ -101,16 +101,16 @@ var Gif = (function () {
 		    size = null;
 
 		for (var i=0, length=2, terminated = false; !terminated; ++i) {
-		    var dataSize = bytes.slice(length, length+1) >>> 0,
-			data = bytes.slice(length+1, (length+1)+dataSize);
+		    var dataSize = bytes.slice(length, length+1),
+			data = bytes.slice(length+1, (length+1)+dataSize[0]);
 
-		    if (dataSize > 0) {
-			datas[i] = [].concat([dataSize], data);
+		    if (dataSize[0] > 0) {
+			datas[i] = [].concat(dataSize, data);
 		    } else {
 			terminated = true;
 		    }
 
-		    length += dataSize+1;
+		    length += dataSize[0]+1;
 		    size = length;
 		}
 
@@ -120,14 +120,13 @@ var Gif = (function () {
 		    },
                     getData : function () {
                         var catenated = [];
-                        for (var i=0; i<images.length; ++i) {
+                        for (var i=0; i<datas.length; ++i) {
                              [].push.apply(catenated, datas[i]);
                         }
 
                         return [].concat(
                             signature,
                             label,
-                            size,
                             catenated,
                             terminator
                         );
@@ -136,27 +135,50 @@ var Gif = (function () {
             };
         })();
 
+        var Trailer = (function () {
+            return function (bytes) {
+                var signature = bytes.slice(0, 1),
+		    size = 1;
+
+		if (signature[0] != 0x3b) {
+		    throw new Data("this is not trailer.");
+		}
+
+                return {
+		    getSize : function () {
+			return size;
+		    },
+                    getData : function () {
+			return [].concat(signature);
+                    }
+                };
+            };
+        })();
+
 	var Blocks = (function () {
 	    return function (bytes) {
-		var data = [];
+		var datas = [],
+		    size = null;
 		var factory = { 
-		    0x2c : function () { return new ImageBlock(bytes); },
-		    0x21 : function () { return new ExtensionBlock(bytes); }
+		    0x2c : function (bytes) { return new ImageBlock(bytes); },
+		    0x21 : function (bytes) { return new ExtensionBlock(bytes); },
+		    0x3b : function (bytes) { return new Trailer(bytes); }
 		};
 
 		for (var i=0, length=0; length<bytes.length; ++i) {
-		    data[i] = factory[bytes[length]]();
-		    length += data[i].getSize();
+		    datas[i] = factory[bytes[length]](bytes.slice(length));
+		    length += datas[i].getSize();
+		    size += length;
 		}
 		return {
 		    getSize : function() {
-			return data.length;
+			return datas.length;
 		    },
 		    get : function(index) {
-			return data[index];
+			return datas[index];
 		    },
 		    set : function(index, block) {
-			data[index] = block;
+			datas[index] = block;
 		    }
 		};
 	    };
@@ -166,14 +188,20 @@ var Gif = (function () {
 	    blocks = new Blocks( bytes.slice(header.getSize()) );
 
         return {
-            header : header,
-	    blocks : blocks,
+            getHeader : function () {
+		return header;
+	    },
+	    getBlocks : function () {
+		return blocks;
+	    },
 	    getData : function () {
 		var data = [];
 		[].push.apply(data, header.getData());
 		for (var i=0; i<blocks.getSize(); ++i) {
 		    [].push.apply(data, blocks.get(i).getData());
 		}
+
+		return data;
 	    }
         };
     };
