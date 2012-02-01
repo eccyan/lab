@@ -24,8 +24,8 @@ class String
 
     buffer = [0]
     position = 0
-    0.upto self.size-1 do |n|
-      buffer, position = operations.fetch(self.slice n).call buffer, position
+    self.split // do |operation|
+      buffer, position = operations.fetch(operation).call buffer, position
     end
 
     buffer
