@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 class String
-  def fuck
+  def fuck(output=STDOUT, input=STDIN)
     identity = lambda do |value|
       return value
     end
@@ -12,72 +12,83 @@ class String
     end
 
     increment_pc = lambda do |pc, memory, pointer|
-      return (increment.call pc), memory, pointer
+      return increment.(pc), memory, pointer
     end
     decrement_pc = lambda do |pc, memory, pointer|
-      return [0, (decrement.call pc)].max, memory, pointer
+      return [0, decrement.(pc)].max, memory, pointer
     end
 
     increment_pointer = lambda do |pc, memory, pointer|
-      memory[increment.call pointer] ||= 0 
-      return increment_pc.call pc, memory, (increment.call pointer)
+      new_memory = if increment.(pointer) < memory.size then memory else memory.concat([0]) end
+      return increment_pc.(pc, new_memory, increment.(pointer))
     end
     decrement_pointer = lambda do |pc, memory, pointer|
-      return increment_pc.call pc, memory, [0, (decrement.call pointer)].max
+      return increment_pc.(pc, memory, [0, decrement.(pointer)].max)
     end
     increment_value = lambda do |pc, memory, pointer|
-      memory[pointer] = (increment.call (memory.fetch pointer)) & 0xff
-      return increment_pc.call pc, memory, pointer
+      memory[pointer] = increment.(memory[pointer]) & 0xff
+      return increment_pc.(pc, memory, pointer)
     end
     decrement_value = lambda do |pc, memory, pointer|
-      memory[pointer] = (decrement.call (memory.fetch pointer)) & 0xff
-      return increment_pc.call pc, memory, pointer
+      memory[pointer] = decrement.(memory[pointer]) & 0xff
+      return increment_pc.(pc, memory, pointer)
+    end
+
+    get = lambda do |pc, memory, pointer|
+      new_memory = memory.map.with_index do |v, i|
+	if i == pointer then 
+	  input.getc.bytes.to_a[0] 
+	else 
+	  v i
+	end
+      end
+      return increment_pc.(pc, new_memory, pointer)
+    end
+    put = lambda do |pc, memory, pointer|
+      output.putc memory[pointer]
+      return increment_pc.(pc, memory, pointer)
     end
 
     loop_out = lambda do |pc, memory, pointer|
       find = lambda do |pc, nest|
         return pc if nest.zero?
-        new_pc = increment.call pc
-        operation = {?[ => increment, ?] => decrement}.fetch (self.slice new_pc), identity
-        find.call new_pc, (operation.call nest)
+        new_pc = increment.(pc)
+        operation = {?[ => increment, ?] => decrement}.fetch(self.slice(new_pc), identity)
+        find.(new_pc, operation.(nest))
       end
-      return increment_pc.call pc, memory, pointer if (memory.at pointer).nonzero?
-      return find.call(pc, 1), memory, pointer
+      return increment_pc.(pc, memory, pointer) if (memory.at pointer).nonzero?
+      return find.(pc, 1), memory, pointer
     end
     loop_in = lambda do |pc, memory, pointer|
       find = lambda do |pc, nest|
         return pc if nest.zero?
         new_pc = decrement.call pc
-        operation = {?[ => decrement, ?] => increment}.fetch (self.slice new_pc), identity 
-        find.call new_pc, (operation.call nest)
+        operation = {?[ => decrement, ?] => increment}.fetch(self.slice(new_pc), identity)
+        find.(new_pc, operation.(nest))
       end
-      return increment_pc.call pc, memory, pointer if (memory.at pointer).zero?
-      return find.call(pc, 1), memory, pointer
+      return increment_pc.(pc, memory, pointer) if (memory.at pointer).zero?
+      return find.(pc, 1), memory, pointer
     end
     
     operations = {
       ?+ => increment_value, ?- => decrement_value,
       ?> => increment_pointer, ?< => decrement_pointer,
+      ?, => get, ?. => put,
       ?[ => loop_out, ?] => loop_in,
     }
-    pc = 0 #pragram counter
-    memory = [0]
-    pointer = 0
-    while self.size > pc 
-      pc, memory, pointer = (operations.fetch (self.slice pc), increment_pc)
-        .call pc, memory, pointer
+
+    run = lambda do |pc, memory, pointer|
+      return memory unless pc < self.size
+      p, m, pt = operations.fetch(self.slice(pc), increment_pc).(pc, memory, pointer)
+      run.(p, m, pt)
     end
 
-    memory
+    run.(0, [0], 0)
   end
 end
 
-'+'.fuck #=> [1]
-'-'.fuck #=> [255]
-'>'.fuck #=> [0, 0]
-'<'.fuck #=> [0]
-'++コメント++'.fuck #=> [4]
-'+++[>+<-]'.fuck #=> [0, 3]
-('+'*256).fuck #=> [0]
-'+>+'.fuck #=> [1, 1]
-'>><+'.fuck #=> [0, 1, 0]
+','.fuck
+
+'+++++++++[>++++++++>+++++++++++>+++++<<<-]>.>++.+++++++..+++.>-.
+------------.<++++++++.--------.+++.------.--------.>+.'.fuck
+
