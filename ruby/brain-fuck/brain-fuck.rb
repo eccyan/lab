@@ -26,20 +26,32 @@ class String
       return increment_pc.(pc, memory, [0, decrement.(pointer)].max)
     end
     increment_value = lambda do |pc, memory, pointer|
-      memory[pointer] = increment.(memory[pointer]) & 0xff
-      return increment_pc.(pc, memory, pointer)
+      new_memory = memory.map.with_index do |value, index| 
+	if index == pointer then
+	  increment.(memory[pointer]) & 0xff if pointer 
+	else
+	  value
+	end
+      end
+      return increment_pc.(pc, new_memory, pointer)
     end
     decrement_value = lambda do |pc, memory, pointer|
-      memory[pointer] = decrement.(memory[pointer]) & 0xff
-      return increment_pc.(pc, memory, pointer)
+      new_memory = memory.map.with_index do |value, index| 
+	if index == pointer then
+	  decrement.(memory[pointer]) & 0xff if pointer 
+	else
+	  value
+	end
+      end
+      return increment_pc.(pc, new_memory, pointer)
     end
 
     get = lambda do |pc, memory, pointer|
-      new_memory = memory.map.with_index do |v, i|
-	if i == pointer then 
+      new_memory = memory.map.with_index do |value, index|
+	if index == pointer then 
 	  input.getc.bytes.to_a[0] 
 	else 
-	  v
+	  value
 	end
       end
       return increment_pc.(pc, new_memory, pointer)
