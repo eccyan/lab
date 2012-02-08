@@ -39,7 +39,7 @@ class String
 	if i == pointer then 
 	  input.getc.bytes.to_a[0] 
 	else 
-	  v i
+	  v
 	end
       end
       return increment_pc.(pc, new_memory, pointer)
