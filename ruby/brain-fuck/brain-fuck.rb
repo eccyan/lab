@@ -28,7 +28,7 @@ class String
     increment_value = lambda do |pc, memory, pointer|
       new_memory = memory.map.with_index do |value, index| 
 	if index == pointer then
-	  increment.(memory[pointer]) & 0xff if pointer 
+	  increment.(memory[pointer]) & 0xff 
 	else
 	  value
 	end
@@ -38,7 +38,7 @@ class String
     decrement_value = lambda do |pc, memory, pointer|
       new_memory = memory.map.with_index do |value, index| 
 	if index == pointer then
-	  decrement.(memory[pointer]) & 0xff if pointer 
+	  decrement.(memory[pointer]) & 0xff
 	else
 	  value
 	end
